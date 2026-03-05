@@ -1,0 +1,32 @@
+{
+    "version": 2,
+    "buildCommand": "npx prisma generate && npx tsc",
+    "installCommand": "npm install",
+    "framework": null,
+    "functions": {
+        "api/**/*.ts": {
+            "memory": 1024,
+            "maxDuration": 10
+        }
+    },
+    "routes": [
+        {
+            "src": "/api/webhook",
+            "dest": "/api/webhook.ts"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "/api/webhook.ts"
+        }
+    ],
+    "crons": [
+        {
+            "path": "/api/cron-daily",
+            "schedule": "0 23 * * *"
+        },
+        {
+            "path": "/api/cron-stock",
+            "schedule": "0 */4 * * *"
+        }
+    ]
+}

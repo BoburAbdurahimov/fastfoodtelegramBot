@@ -1,0 +1,201 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         Int      @id @default(autoincrement())
+  telegramId BigInt   @unique
+  username   String?
+  name       String
+  role       String   @default("EMPLOYEE")
+  salary     Float    @default(0)
+  isActive   Boolean  @default(true)
+  deletedAt  DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  orders        Order[]
+  warehouseLogs WarehouseLog[]
+  expenses      Expense[]
+  attendance    Attendance[]
+  auditLogs     AuditLog[]
+
+  @@index([telegramId])
+  @@index([role])
+}
+
+model WarehouseProduct {
+  id                Int      @id @default(autoincrement())
+  name              String
+  unit              String   @default("PCS")
+  costPerUnit       Float
+  quantity          Float    @default(0)
+  lowStockThreshold Float    @default(5)
+  deletedAt         DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  logs    WarehouseLog[]
+  recipes Recipe[]
+
+  @@index([name])
+}
+
+model WarehouseLog {
+  id             Int                @id @default(autoincrement())
+  productId      Int
+  userId         Int
+  quantityChange Float
+  reason         String
+  note           String?
+  createdAt      DateTime           @default(now())
+
+  product WarehouseProduct @relation(fields: [productId], references: [id])
+  user    User             @relation(fields: [userId], references: [id])
+
+  @@index([productId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model MenuCategory {
+  id        Int       @id @default(autoincrement())
+  name      String
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  menuItems MenuItem[]
+}
+
+model MenuItem {
+  id         Int       @id @default(autoincrement())
+  name       String
+  price      Float
+  categoryId Int
+  isActive   Boolean   @default(true)
+  deletedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  category   MenuCategory @relation(fields: [categoryId], references: [id])
+  recipes    Recipe[]
+  orderItems OrderItem[]
+
+  @@index([categoryId])
+  @@index([name])
+}
+
+model Recipe {
+  id                 Int   @id @default(autoincrement())
+  menuItemId         Int
+  warehouseProductId Int
+  quantity           Float
+
+  menuItem         MenuItem         @relation(fields: [menuItemId], references: [id])
+  warehouseProduct WarehouseProduct @relation(fields: [warehouseProductId], references: [id])
+
+  @@unique([menuItemId, warehouseProductId])
+  @@index([menuItemId])
+  @@index([warehouseProductId])
+}
+
+model Order {
+  id          Int         @id @default(autoincrement())
+  orderNumber Int
+  userId      Int
+  clientName  String?
+  orderType   String      @default("DINEIN")
+  tableNumber Int?
+  totalPrice  Float       @default(0)
+  totalCost   Float       @default(0)
+  profit      Float       @default(0)
+  status      String      @default("NEW")
+  completedAt DateTime?
+  deletedAt   DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  user  User        @relation(fields: [userId], references: [id])
+  items OrderItem[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Table {
+  id        Int      @id @default(autoincrement())
+  number    Int      @unique
+  name      String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model OrderItem {
+  id         Int   @id @default(autoincrement())
+  orderId    Int
+  menuItemId Int
+  quantity   Int
+  unitPrice  Float
+  unitCost   Float
+
+  order    Order    @relation(fields: [orderId], references: [id])
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id])
+
+  @@index([orderId])
+  @@index([menuItemId])
+}
+
+model Expense {
+  id          Int       @id @default(autoincrement())
+  type        String
+  amount      Float
+  date        DateTime
+  recurring   Boolean   @default(false)
+  description String?
+  userId      Int
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([date])
+  @@index([type])
+}
+
+model Attendance {
+  id      Int      @id @default(autoincrement())
+  userId  Int
+  date    DateTime
+  present Boolean  @default(true)
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, date])
+  @@index([userId])
+  @@index([date])
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  action    String
+  entity    String
+  entityId  Int?
+  details   String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([entity])
+  @@index([createdAt])
+}
