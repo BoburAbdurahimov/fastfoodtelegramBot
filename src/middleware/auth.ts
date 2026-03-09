@@ -23,8 +23,13 @@ export async function authMiddleware(ctx: BotContext, next: () => Promise<void>)
 
     // Auto-register employer on first use
     if (!user && ctx.from.id.toString() === env.EMPLOYER_TELEGRAM_ID) {
-        user = await prisma.user.create({
-            data: {
+        user = await prisma.user.upsert({
+            where: { telegramId },
+            update: {
+                username: ctx.from.username || null,
+                name: ctx.from.first_name || 'Owner',
+            },
+            create: {
                 telegramId,
                 username: ctx.from.username || null,
                 name: ctx.from.first_name || 'Owner',
