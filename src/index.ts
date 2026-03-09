@@ -15,8 +15,22 @@ async function main() {
     process.once('SIGINT', () => shutdown('SIGINT'));
     process.once('SIGTERM', () => shutdown('SIGTERM'));
 
-    console.log('🚀 Starting Fast Food Bot (Local Polling)...');
+    console.log('🚀 Starting Fast Food Bot (Local Polling/Railway)...');
     console.log(`📌 Environment: ${env.NODE_ENV}`);
+
+    // Schedule crons
+    const cron = require('node-cron');
+    const { NotificationService } = require('./services/notification.service');
+    // Daily summary at 23:00
+    cron.schedule('0 23 * * *', async () => {
+        try { await NotificationService.sendDailySummary(); }
+        catch (e) { console.error('Daily cron error:', e); }
+    });
+    // Low stock check at 8:00
+    cron.schedule('0 8 * * *', async () => {
+        try { await NotificationService.sendLowStockAlert(); }
+        catch (e) { console.error('Stock cron error:', e); }
+    });
 
     await bot.launch();
     console.log('✅ Bot is running locally!');
