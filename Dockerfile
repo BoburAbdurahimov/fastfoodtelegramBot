@@ -1,27 +1,21 @@
-FROM node:20-alpine AS builder
+FROM node:20-slim
+
+# Install OpenSSL (required by Prisma)
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
+# Copy package files and install dependencies
 COPY package*.json ./
-COPY prisma ./prisma/
+RUN npm install
 
-RUN npm ci
+# Generate Prisma client
+COPY prisma ./prisma
 RUN npx prisma generate
 
-COPY tsconfig.json ./
-COPY src ./src/
-
+# Copy source and build
+COPY . .
 RUN npm run build
 
-FROM node:20-alpine AS runner
-
-WORKDIR /app
-
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/package*.json ./
-
-ENV NODE_ENV=production
-
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/src/index.js"]
+# Start the bot
+CMD ["node", "dist/src/index.js"]
