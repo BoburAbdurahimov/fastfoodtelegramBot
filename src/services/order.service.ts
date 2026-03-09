@@ -87,8 +87,16 @@ export class OrderService {
 
         // 4. Deduct stock
         for (const item of items) {
-            const deductions = await RecipeService.getDeductionItems(item.menuItemId, item.quantity);
-            await WarehouseService.deductForOrder(deductions, userId, order.id);
+            const menuItem = await prisma.menuItem.findUnique({ where: { id: item.menuItemId } }) as any;
+            if (menuItem.isTracked) {
+                await (prisma as any).menuItem.update({
+                    where: { id: item.menuItemId },
+                    data: { stockQuantity: { decrement: item.quantity } }
+                });
+            } else {
+                const deductions = await RecipeService.getDeductionItems(item.menuItemId, item.quantity);
+                await WarehouseService.deductForOrder(deductions, userId, order.id);
+            }
         }
 
         await AuditService.log(userId, 'CREATE_ORDER', 'Order', order.id, {
@@ -182,8 +190,16 @@ export class OrderService {
             order.status !== OrderStatus.RETURNED
         ) {
             for (const item of order.items) {
-                const deductions = await RecipeService.getDeductionItems(item.menuItemId, item.quantity);
-                await WarehouseService.restoreForOrder(deductions, userId, order.id);
+                const menuItem = await prisma.menuItem.findUnique({ where: { id: item.menuItemId } }) as any;
+                if (menuItem.isTracked) {
+                    await (prisma as any).menuItem.update({
+                        where: { id: item.menuItemId },
+                        data: { stockQuantity: { increment: item.quantity } }
+                    });
+                } else {
+                    const deductions = await RecipeService.getDeductionItems(item.menuItemId, item.quantity);
+                    await WarehouseService.restoreForOrder(deductions, userId, order.id);
+                }
             }
         }
 
@@ -206,6 +222,30 @@ export class OrderService {
 
         return updated;
     }
+
+    static async markAsPaid(id: number, method: 'CASH' | 'CARD', userId: number) {
+        const order = await prisma.order.findUnique({ where: { id } });
+        if (!order) throw new Error('Order not found');
+
+        const updated = await (prisma.order as any).update({
+            where: { id },
+            data: {
+                isPaid: true,
+                paymentMethod: method,
+            },
+            include: {
+                user: { select: { name: true } },
+            },
+        });
+
+        await AuditService.log(userId, 'PAY_ORDER', 'Order', id, {
+            method,
+            totalPrice: order.totalPrice,
+        });
+
+        return updated;
+    }
+
 
     static async getTodayOrders(userId?: number) {
         const today = new Date();

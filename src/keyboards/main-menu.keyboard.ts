@@ -8,6 +8,7 @@ export function getMainMenuKeyboard(role: Role) {
             ['\ud83d\udce6 Ombor', '\ud83c\udf54 Menyu'],
             ['\ud83d\udc65 Xodimlar', '\ud83d\udcb8 Xarajatlar'],
             ['\ud83d\udcca Statistika', '\ud83e\ude91 Stollar'],
+            ['🥘 Ovqat qoldig\'i'],
             ['\u2699\ufe0f Sozlamalar'],
         ]).resize();
     }
@@ -16,6 +17,7 @@ export function getMainMenuKeyboard(role: Role) {
         return Markup.keyboard([
             ['🆕 Yangi Buyurtma'],
             ['📋 Mening Buyurtmalarim'],
+            ['🥘 Ovqat qoldig\'i'],
             ['📅 Mening Davomatim'],
         ]).resize();
     }
@@ -24,6 +26,7 @@ export function getMainMenuKeyboard(role: Role) {
         return Markup.keyboard([
             ['🔔 Yangi Buyurtmalar'],
             ['🔥 Tayyorlanayotgan'],
+            ['🥘 Tayyorlash (Katta hajmda)'],
             ['📅 Mening Davomatim'],
         ]).resize();
     }

@@ -9,6 +9,7 @@ export interface SessionData extends Scenes.WizardSessionData {
     menuItemId?: number;
     menuCategoryId?: number;
     menuAction?: string;
+    batchAction?: string; // For Chef batch processing
 
     // Order
     orderItems?: Array<{ menuItemId: number; name: string; quantity: number; price: number }>;

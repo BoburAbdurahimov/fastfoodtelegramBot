@@ -26,7 +26,7 @@ import {
     myAttendanceScene,
 } from './scenes/employee';
 import { statisticsScene } from './scenes/statistics';
-import { chefOrdersScene, chefPreparingScene } from './scenes/chef';
+import { chefOrdersScene, chefPreparingScene, chefBatchScene } from './scenes/chef';
 import { waiterOrdersScene } from './scenes/waiter';
 import { tableManageScene } from './scenes/table';
 
@@ -57,6 +57,7 @@ export function createBot(): Telegraf<BotContext> {
         statisticsScene,
         chefOrdersScene,
         chefPreparingScene,
+        chefBatchScene,
         waiterOrdersScene,
         tableManageScene,
     ]);
@@ -249,6 +250,32 @@ export function createBot(): Telegraf<BotContext> {
     // Chef: View NEW orders
     bot.hears('🔔 Yangi Buyurtmalar', requireRole('CHEF'), async (ctx) => {
         await ctx.scene.enter('chef_orders');
+    });
+
+    // Chef: Batch preparations
+    bot.hears('🥘 Tayyorlash (Katta hajmda)', requireRole('CHEF'), async (ctx) => {
+        await ctx.scene.enter('chef_batch');
+    });
+
+    // View Tracked Stock
+    bot.hears('🥘 Ovqat qoldig\'i', async (ctx) => {
+        const { MenuService } = await import('./services/menu.service');
+        const items = await MenuService.getAllMenuItems();
+        const tracked = items.filter((i: any) => i.isTracked);
+
+        if (tracked.length === 0) {
+            return ctx.reply('✅ Hozircha maxsus kuzatiladigan taomlar (Ovqat qoldig\'i) qo\'shilmagan.');
+        }
+
+        const lines = tracked.map((i: any) => {
+            let status = `📦 Qoldiq: ${i.stockQuantity} ta`;
+            if (i.isPreparing) {
+                status += ` | ⏳ Tayyorlanmoqda: ${i.prepWaitTime ? i.prepWaitTime + ' daqiqa' : 'Noma\'lum'}`;
+            }
+            return `🥘 *${i.name}*\n   ${status}`;
+        });
+
+        await ctx.reply(`📊 *OVQAT QOLDIG'I*\n\n${lines.join('\n\n')}`, { parse_mode: 'Markdown' });
     });
 
     // Chef: View PREPARING orders

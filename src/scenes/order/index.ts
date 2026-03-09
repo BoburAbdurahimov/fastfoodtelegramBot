@@ -121,6 +121,10 @@ orderListScene.hears(/^\ud83d\udcdd #(\d+)$/, async (ctx) => {
         (i) => `  • ${i.menuItem.name} x${i.quantity} = ${formatCurrency(i.unitPrice * i.quantity)} UZS`
     );
 
+    const paymentStatus = (order as any).isPaid
+        ? `✅ To'langan (${(order as any).paymentMethod === 'CASH' ? 'Naqd' : 'Karta'})`
+        : `❌ To'lanmagan`;
+
     const message = [
         `📋 *Buyurtma #${(order as any).orderNumber || order.id}*\n`,
         `📊 Holat: ${order.status}`,
@@ -131,8 +135,9 @@ orderListScene.hears(/^\ud83d\udcdd #(\d+)$/, async (ctx) => {
         `\n🍔 *Taomlar:*`,
         ...itemLines,
         `\n💰 Jami narx: ${formatCurrency(order.totalPrice)} UZS`,
-        `💵 Tannarx: ${formatCurrency(order.totalCost)} UZS`,
-        `📈 Foyda: ${formatCurrency(order.profit)} UZS`,
+        `💵 Tannarx: ${formatCurrency((order as any).totalCost)} UZS`,
+        `📈 Foyda: ${formatCurrency((order as any).profit)} UZS`,
+        `💳 To'lov: ${paymentStatus}`,
         `\n📅 Yaratildi: ${order.createdAt.toLocaleString()}`,
         order.completedAt ? `✅ Bajarildi: ${order.completedAt.toLocaleString()}` : '',
     ].filter(Boolean).join('\n');
@@ -149,6 +154,9 @@ orderListScene.hears(/^\ud83d\udcdd #(\d+)$/, async (ctx) => {
         buttons.push(['\ud83c\udfc1 Topshirildi']);
     }
     if (order.status === OrderStatus.COMPLETED) {
+        if (!(order as any).isPaid) {
+            buttons.push(['💵 Naqd to\'lov', '💳 Karta orqali']);
+        }
         buttons.push(['\ud83d\udd04 Qaytarish']);
     }
     buttons.push(['\ud83d\udd19 Ro\'yxatga qaytish']);
@@ -158,6 +166,94 @@ orderListScene.hears(/^\ud83d\udcdd #(\d+)$/, async (ctx) => {
         ...Markup.keyboard(buttons).resize(),
     });
 });
+
+orderListScene.hears('🔄 Tayyorlash', async (ctx) => {
+    if (!ctx.session.selectedOrderId) return;
+    try {
+        await OrderService.updateStatus(ctx.session.selectedOrderId, OrderStatus.PREPARING, ctx.dbUser!.id);
+        await ctx.reply('✅ Buyurtma tayyorlashga olindi.');
+        await showOrderList(ctx, ctx.session.currentPage || 1, ctx.session.currentFilter as OrderStatus | undefined);
+    } catch (e: any) {
+        await ctx.reply(`❌ Xatolik: ${e.message}`);
+    }
+});
+
+orderListScene.hears('✅ Tayyor', async (ctx) => {
+    if (!ctx.session.selectedOrderId) return;
+    try {
+        await OrderService.updateStatus(ctx.session.selectedOrderId, OrderStatus.READY, ctx.dbUser!.id);
+        await ctx.reply('✅ Buyurtma tayyor bo\'ldi.');
+        await showOrderList(ctx, ctx.session.currentPage || 1, ctx.session.currentFilter as OrderStatus | undefined);
+    } catch (e: any) {
+        await ctx.reply(`❌ Xatolik: ${e.message}`);
+    }
+});
+
+orderListScene.hears('🏁 Topshirildi', async (ctx) => {
+    if (!ctx.session.selectedOrderId) return;
+    try {
+        await OrderService.updateStatus(ctx.session.selectedOrderId, OrderStatus.COMPLETED, ctx.dbUser!.id);
+        await ctx.reply('✅ Buyurtma topshirildi.');
+        await showOrderList(ctx, ctx.session.currentPage || 1, ctx.session.currentFilter as OrderStatus | undefined);
+    } catch (e: any) {
+        await ctx.reply(`❌ Xatolik: ${e.message}`);
+    }
+});
+
+orderListScene.hears('🔄 Qaytarish', async (ctx) => {
+    if (!ctx.session.selectedOrderId) return;
+    try {
+        await OrderService.updateStatus(ctx.session.selectedOrderId, OrderStatus.RETURNED, ctx.dbUser!.id);
+        await ctx.reply('✅ Buyurtma qaytarildi.');
+        await showOrderList(ctx, ctx.session.currentPage || 1, ctx.session.currentFilter as OrderStatus | undefined);
+    } catch (e: any) {
+        await ctx.reply(`❌ Xatolik: ${e.message}`);
+    }
+});
+
+orderListScene.hears('❌ Bekor qilish', async (ctx) => {
+    if (!ctx.session.selectedOrderId) return;
+    try {
+        await OrderService.updateStatus(ctx.session.selectedOrderId, OrderStatus.CANCELLED, ctx.dbUser!.id);
+        await ctx.reply('✅ Buyurtma bekor qilindi.');
+        await showOrderList(ctx, ctx.session.currentPage || 1, ctx.session.currentFilter as OrderStatus | undefined);
+    } catch (e: any) {
+        await ctx.reply(`❌ Xatolik: ${e.message}`);
+    }
+});
+
+orderListScene.hears('🔙 Ro\'yxatga qaytish', async (ctx) => {
+    ctx.session.selectedOrderId = undefined;
+    await showOrderList(ctx, ctx.session.currentPage || 1, ctx.session.currentFilter as OrderStatus | undefined);
+});
+
+orderListScene.hears('🔙 Orqaga', async (ctx) => {
+    await ctx.reply('Asosiy menyu', orderMenuKeyboard);
+    return ctx.scene.leave();
+});
+
+orderListScene.hears('💵 Naqd to\'lov', async (ctx) => {
+    if (!ctx.session.selectedOrderId) return;
+    try {
+        await OrderService.markAsPaid(ctx.session.selectedOrderId, 'CASH', ctx.dbUser!.id);
+        await ctx.reply('✅ To\'lov (Naqd) qabul qilindi.');
+        await showOrderList(ctx, ctx.session.currentPage || 1, ctx.session.currentFilter as OrderStatus | undefined);
+    } catch (e: any) {
+        await ctx.reply(`❌ Xatolik: ${e.message}`);
+    }
+});
+
+orderListScene.hears('💳 Karta orqali', async (ctx) => {
+    if (!ctx.session.selectedOrderId) return;
+    try {
+        await OrderService.markAsPaid(ctx.session.selectedOrderId, 'CARD', ctx.dbUser!.id);
+        await ctx.reply('✅ To\'lov (Karta) qabul qilindi.');
+        await showOrderList(ctx, ctx.session.currentPage || 1, ctx.session.currentFilter as OrderStatus | undefined);
+    } catch (e: any) {
+        await ctx.reply(`❌ Xatolik: ${e.message}`);
+    }
+});
+
 
 import { TableService } from '../../services/table.service';
 

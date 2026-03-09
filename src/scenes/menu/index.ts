@@ -25,10 +25,11 @@ async function showMenuPage(ctx: BotContext, items: any[], page: number) {
 
     const lines = data.map((item) => {
         const status = item.isActive ? '🟢' : '🔴';
+        const tracking = item.isTracked ? ` | 👀 Kuzatuvda (${item.stockQuantity || 0} ta qoldiq)` : '';
         const ingredients = item.recipes.length > 0
             ? item.recipes.map((r: any) => `    • ${r.warehouseProduct.name}: ${r.quantity} ${r.warehouseProduct.unit}`).join('\n')
             : '    (retsept yo\'q)';
-        return `${status} *${item.name}* — ${formatCurrency(item.price)} UZS\n📂 ${item.category.name}\n🧪 Retsept:\n${ingredients}`;
+        return `${status} *${item.name}*${tracking} — ${formatCurrency(item.price)} UZS\n📂 ${item.category.name}\n🧪 Retsept:\n${ingredients}`;
     });
 
     const message = `🍔 *MENYU MAHSULOTLARI (${page}/${totalPages})*\n\n${lines.join('\n\n')}`;
@@ -81,11 +82,12 @@ menuListScene.hears(/^📝 (.*)$/, async (ctx) => {
         `💰 Narx: ${formatCurrency(item.price)} UZS`,
         `📂 Kategoriya: ${item.category.name}`,
         `${item.isActive ? '🟢 Faol' : '🔴 Nofaol'}`,
+        (item as any).isTracked ? `👀 Kuzatuvda (Ovqat qoldig'i)` : '',
         `\n🧪 *Retsept:*`,
         recipes.length > 0 ? recipes.join('\n') : '  Ingredientlar yo\'q',
         `\n💵 Tannarx: ${formatCurrency(totalCost)} UZS`,
         `📈 Foyda: ${formatCurrency(item.price - totalCost)} UZS`,
-    ].join('\n');
+    ].filter(Boolean).join('\n');
 
     ctx.session.menuItemId = item.id;
 
@@ -93,6 +95,7 @@ menuListScene.hears(/^📝 (.*)$/, async (ctx) => {
         parse_mode: 'Markdown',
         ...Markup.keyboard([
             [item.isActive ? '🔴 O\'chirish (nofaol)' : '🟢 Yoqish (faol)'],
+            [(item as any).isTracked ? '🚫 Kuzatuvni to\'xtatish' : '👀 Qoldiqni kuzatish'],
             ['🗑️ O\'chirish'],
             ['🔙 Ro\'yxatga Qaytish'],
         ]).resize(),
@@ -112,6 +115,24 @@ menuListScene.hears('🟢 Yoqish (faol)', async (ctx) => {
     if (ctx.session.menuItemId) {
         await MenuService.toggleActive(ctx.session.menuItemId);
         await ctx.reply('✅ Menyu elementi faol qilindi.');
+    }
+    const items = await MenuService.getAllMenuItems();
+    await showMenuPage(ctx, items, ctx.session.currentPage || 1);
+});
+
+menuListScene.hears('👀 Qoldiqni kuzatish', async (ctx) => {
+    if (ctx.session.menuItemId) {
+        await MenuService.toggleTracked(ctx.session.menuItemId);
+        await ctx.reply('✅ Menyu elementi qoldig\'i kuzatilmoqda (Ovqat qoldig\'i ro\'yxatiga tushdi).');
+    }
+    const items = await MenuService.getAllMenuItems();
+    await showMenuPage(ctx, items, ctx.session.currentPage || 1);
+});
+
+menuListScene.hears('🚫 Kuzatuvni to\'xtatish', async (ctx) => {
+    if (ctx.session.menuItemId) {
+        await MenuService.toggleTracked(ctx.session.menuItemId);
+        await ctx.reply('✅ Menyu elementi kuzatuvi to\'xtatildi.');
     }
     const items = await MenuService.getAllMenuItems();
     await showMenuPage(ctx, items, ctx.session.currentPage || 1);

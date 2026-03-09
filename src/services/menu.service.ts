@@ -1,5 +1,6 @@
 import prisma from '../config/prisma';
 import { AuditService } from '../middleware/audit';
+import { WarehouseService } from './warehouse.service';
 
 export class MenuService {
     // Categories
@@ -114,6 +115,42 @@ export class MenuService {
             data: { isActive: !item.isActive },
         });
     }
+
+    static async toggleTracked(id: number) {
+        const item = await prisma.menuItem.findUnique({ where: { id } }) as any;
+        if (!item) throw new Error('Menu item not found');
+        return (prisma as any).menuItem.update({
+            where: { id },
+            data: { isTracked: !item.isTracked },
+        });
+    }
+
+    static async setPreparingStatus(id: number, isPreparing: boolean, prepWaitTime: number | null) {
+        return (prisma as any).menuItem.update({
+            where: { id },
+            data: { isPreparing, prepWaitTime },
+        });
+    }
+
+    static async finishBatch(id: number, quantity: number, userId: number) {
+        const item = await prisma.menuItem.findUnique({ where: { id } }) as any;
+        if (!item || !item.isTracked) throw new Error('Menu item is not tracked or not found');
+
+        // Deduct from warehouse
+        const deductions = await RecipeService.getDeductionItems(id, quantity);
+        await WarehouseService.deductForBatch(deductions, userId, id);
+
+        // Add to stock
+        return (prisma as any).menuItem.update({
+            where: { id },
+            data: {
+                stockQuantity: { increment: quantity },
+                isPreparing: false,
+                prepWaitTime: null
+            }
+        });
+    }
+
 }
 
 export class RecipeService {
@@ -158,6 +195,17 @@ export class RecipeService {
         menuItemId: number,
         quantity: number = 1
     ): Promise<{ available: boolean; missing: string[] }> {
+        const menuItem = await prisma.menuItem.findUnique({ where: { id: menuItemId } }) as any;
+        if (!menuItem) throw new Error('Menu item not found');
+
+        if (menuItem.isTracked) {
+            const missing: string[] = [];
+            if (menuItem.stockQuantity < quantity) {
+                missing.push(`${menuItem.name}: ${quantity} ta so'raldi, lekin ${menuItem.stockQuantity} ta bor`);
+            }
+            return { available: missing.length === 0, missing };
+        }
+
         const recipes = await prisma.recipe.findMany({
             where: { menuItemId },
             include: { warehouseProduct: true },

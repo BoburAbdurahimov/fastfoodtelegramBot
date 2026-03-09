@@ -147,6 +147,39 @@ export class WarehouseService {
         }
     }
 
+    static async deductForBatch(
+        items: Array<{ warehouseProductId: number; quantity: number }>,
+        userId: number,
+        menuItemId: number
+    ) {
+        for (const item of items) {
+            const product = await prisma.warehouseProduct.findUnique({
+                where: { id: item.warehouseProductId },
+            });
+            if (!product) throw new Error(`Product ID ${item.warehouseProductId} not found`);
+            if (product.quantity < item.quantity) {
+                throw new Error(`Insufficient stock for "${product.name}". Available: ${product.quantity} ${product.unit}, Required: ${item.quantity}`);
+            }
+        }
+
+        for (const item of items) {
+            await prisma.warehouseProduct.update({
+                where: { id: item.warehouseProductId },
+                data: { quantity: { decrement: item.quantity } },
+            });
+
+            await prisma.warehouseLog.create({
+                data: {
+                    productId: item.warehouseProductId,
+                    userId,
+                    quantityChange: -item.quantity,
+                    reason: WarehouseLogReason.MANUAL_REMOVE,
+                    note: `Batch pre-preparation for menu item #${menuItemId}`,
+                },
+            });
+        }
+    }
+
     static async restoreForOrder(
         items: Array<{ warehouseProductId: number; quantity: number }>,
         userId: number,

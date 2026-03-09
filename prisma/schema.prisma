@@ -74,14 +74,18 @@ model MenuCategory {
 }
 
 model MenuItem {
-  id         Int       @id @default(autoincrement())
-  name       String
-  price      Float
-  categoryId Int
-  isActive   Boolean   @default(true)
-  deletedAt  DateTime?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  id            Int       @id @default(autoincrement())
+  name          String
+  price         Float
+  categoryId    Int
+  isActive      Boolean   @default(true)
+  isTracked     Boolean   @default(false)
+  stockQuantity Float     @default(0)
+  isPreparing   Boolean   @default(false)
+  prepWaitTime  Int?
+  deletedAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   category   MenuCategory @relation(fields: [categoryId], references: [id])
   recipes    Recipe[]
@@ -112,14 +116,16 @@ model Order {
   clientName  String?
   orderType   String      @default("DINEIN")
   tableNumber Int?
-  totalPrice  Float       @default(0)
-  totalCost   Float       @default(0)
-  profit      Float       @default(0)
-  status      String      @default("NEW")
-  completedAt DateTime?
-  deletedAt   DateTime?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  totalPrice    Float       @default(0)
+  totalCost     Float       @default(0)
+  profit        Float       @default(0)
+  status        String      @default("NEW")
+  isPaid        Boolean     @default(false)
+  paymentMethod String?
+  completedAt   DateTime?
+  deletedAt     DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 
   user  User        @relation(fields: [userId], references: [id])
   items OrderItem[]

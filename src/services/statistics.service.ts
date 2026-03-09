@@ -18,14 +18,37 @@ export class StatisticsService {
         const completedOrders = orders.filter((o) => o.status === OrderStatus.COMPLETED);
         const cancelledOrders = orders.filter((o) => o.status === OrderStatus.CANCELLED);
         const returnedOrders = orders.filter((o) => o.status === OrderStatus.RETURNED);
+        const paidOrders = completedOrders.filter((o: any) => o.isPaid === true);
 
-        const totalRevenue = completedOrders.reduce((sum, o) => sum + o.totalPrice, 0);
-        const totalCost = completedOrders.reduce((sum, o) => sum + o.totalCost, 0);
+        const totalRevenue = paidOrders.reduce((sum, o) => sum + o.totalPrice, 0);
+        const totalCost = paidOrders.reduce((sum, o) => sum + o.totalCost, 0);
         const orderProfit = totalRevenue - totalCost;
 
         // Expenses
-        const totalExpenses = await ExpenseService.getTotalExpenses(from, to);
-        const expensesByType = await ExpenseService.getExpensesByType(from, to);
+        const recordedExpenses = await ExpenseService.getTotalExpenses(from, to);
+        const expensesByType = await ExpenseService.getExpensesByType(from, to) as Array<{ type: string, _sum: { amount: number | null } }>;
+
+        // Employee Salaries based on attendance
+        const attendances = await prisma.attendance.findMany({
+            where: {
+                date: { gte: from, lte: to },
+                present: true,
+            },
+            include: { user: { select: { salary: true } } },
+        });
+
+        let salaryExpense = 0;
+        for (const record of attendances) {
+            const date = record.date;
+            const daysInMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+            const dailyRate = record.user.salary / daysInMonth;
+            salaryExpense += dailyRate;
+        }
+
+        const totalExpenses = recordedExpenses + salaryExpense;
+        if (salaryExpense > 0) {
+            expensesByType.push({ type: 'Xodimlar maoshi', _sum: { amount: salaryExpense } });
+        }
 
         // Net profit
         const netProfit = orderProfit - totalExpenses;
