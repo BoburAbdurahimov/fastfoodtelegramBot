@@ -81,6 +81,37 @@ export function createBot(): Telegraf<BotContext> {
         await ctx.scene.enter('main_menu');
     });
 
+    // ─── Mini App ───
+    bot.command('app', async (ctx) => {
+        const miniAppUrl = process.env.MINI_APP_URL;
+        if (!miniAppUrl) {
+            await ctx.reply('⚠️ Mini App URL sozlanmagan. MINI_APP_URL ni .env faylga qo\'shing.');
+            return;
+        }
+        await ctx.reply('📱 Mini App ni ochish:', {
+            reply_markup: {
+                inline_keyboard: [[
+                    { text: '📱 Mini App', web_app: { url: miniAppUrl } }
+                ]]
+            }
+        });
+    });
+
+    bot.hears('📱 Mini App', async (ctx) => {
+        const miniAppUrl = process.env.MINI_APP_URL;
+        if (!miniAppUrl) {
+            await ctx.reply('⚠️ Mini App URL sozlanmagan.');
+            return;
+        }
+        await ctx.reply('📱 Mini App ni ochish:', {
+            reply_markup: {
+                inline_keyboard: [[
+                    { text: '📱 Mini App', web_app: { url: miniAppUrl } }
+                ]]
+            }
+        });
+    });
+
     // ─── Main Menu Actions ───
     bot.hears('🔙 Bosh Menyu', async (ctx) => {
         await ctx.scene.enter('main_menu');

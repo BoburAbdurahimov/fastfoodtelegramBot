@@ -1,6 +1,6 @@
 {
     "version": 2,
-    "buildCommand": "npx prisma generate",
+    "buildCommand": "npx prisma generate && cd mini-app && npm install && npx vite build",
     "outputDirectory": ".",
     "functions": {
         "api/**/*.ts": {
@@ -8,6 +8,19 @@
             "maxDuration": 15
         }
     },
+    "rewrites": [
+        { "source": "/app", "destination": "/mini-app/dist/index.html" },
+        { "source": "/app/(.*)", "destination": "/mini-app/dist/$1" },
+        { "source": "/app/:path*", "destination": "/mini-app/dist/index.html" }
+    ],
+    "headers": [
+        {
+            "source": "/mini-app/dist/(.*)",
+            "headers": [
+                { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+            ]
+        }
+    ],
     "crons": [
         {
             "path": "/api/cron-daily",

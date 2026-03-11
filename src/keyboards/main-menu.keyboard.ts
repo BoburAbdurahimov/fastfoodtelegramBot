@@ -9,7 +9,7 @@ export function getMainMenuKeyboard(role: Role) {
             ['\ud83d\udc65 Xodimlar', '\ud83d\udcb8 Xarajatlar'],
             ['\ud83d\udcca Statistika', '\ud83e\ude91 Stollar'],
             ['🥘 Ovqat qoldig\'i'],
-            ['\u2699\ufe0f Sozlamalar'],
+            ['📱 Mini App', '\u2699\ufe0f Sozlamalar'],
         ]).resize();
     }
 
@@ -19,6 +19,7 @@ export function getMainMenuKeyboard(role: Role) {
             ['📋 Mening Buyurtmalarim'],
             ['🥘 Ovqat qoldig\'i'],
             ['📅 Mening Davomatim'],
+            ['📱 Mini App'],
         ]).resize();
     }
 
@@ -28,6 +29,7 @@ export function getMainMenuKeyboard(role: Role) {
             ['🔥 Tayyorlanayotgan'],
             ['🥘 Tayyorlash (Katta hajmda)'],
             ['📅 Mening Davomatim'],
+            ['📱 Mini App'],
         ]).resize();
     }
 
@@ -36,6 +38,7 @@ export function getMainMenuKeyboard(role: Role) {
         ['🆕 Yangi Buyurtma'],
         ['📋 Buyurtmalar', '📦 Ombor'],
         ['📅 Mening Davomatim'],
+        ['📱 Mini App'],
     ]).resize();
 }
 
