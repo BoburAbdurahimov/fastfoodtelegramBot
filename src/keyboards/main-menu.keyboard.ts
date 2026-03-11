@@ -2,43 +2,9 @@ import { Markup } from 'telegraf';
 import { Role } from '../middleware/auth';
 
 export function getMainMenuKeyboard(role: Role) {
-    if (role === Role.EMPLOYER) {
-        return Markup.keyboard([
-            ['\ud83d\udccb Buyurtmalar'],
-            ['\ud83d\udce6 Ombor', '\ud83c\udf54 Menyu'],
-            ['\ud83d\udc65 Xodimlar', '\ud83d\udcb8 Xarajatlar'],
-            ['\ud83d\udcca Statistika', '\ud83e\ude91 Stollar'],
-            ['🥘 Ovqat qoldig\'i'],
-            ['📱 Mini App', '\u2699\ufe0f Sozlamalar'],
-        ]).resize();
-    }
-
-    if (role === Role.WAITER) {
-        return Markup.keyboard([
-            ['🆕 Yangi Buyurtma'],
-            ['📋 Mening Buyurtmalarim'],
-            ['🥘 Ovqat qoldig\'i'],
-            ['📅 Mening Davomatim'],
-            ['📱 Mini App'],
-        ]).resize();
-    }
-
-    if (role === Role.CHEF) {
-        return Markup.keyboard([
-            ['🔔 Yangi Buyurtmalar'],
-            ['🔥 Tayyorlanayotgan'],
-            ['🥘 Tayyorlash (Katta hajmda)'],
-            ['📅 Mening Davomatim'],
-            ['📱 Mini App'],
-        ]).resize();
-    }
-
-    // Default employee menu
+    // All roles now only see the Mini App button as requested
     return Markup.keyboard([
-        ['🆕 Yangi Buyurtma'],
-        ['📋 Buyurtmalar', '📦 Ombor'],
-        ['📅 Mening Davomatim'],
-        ['📱 Mini App'],
+        ['📱 Mini App']
     ]).resize();
 }
 
