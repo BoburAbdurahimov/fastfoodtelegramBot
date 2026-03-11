@@ -62,7 +62,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (!user) return res.status(401).json({ error: 'Not authenticated' });
 
         // Parse path: /api/app/warehouse/1/add-stock => ["warehouse", "1", "add-stock"]
-        const pathParam = req.query.path;
+        const pathParam = req.query.path || req.query['...path'];
         const segments = Array.isArray(pathParam) ? pathParam : (pathParam ? [pathParam] : []);
         const method = req.method!;
         const body = req.body || {};
