@@ -15,18 +15,16 @@ export default async function handler(req: any, res: any) {
         return res.status(200).json({ error: startupError.message || String(startupError) });
     }
 
-    console.log('--- START ---');
-    try {
-        if (req.method === 'POST') {
-            const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT_9S')), 9000));
-            await Promise.race([bot.handleUpdate(req.body), timeout]);
-            console.log('--- DONE ---');
-            res.status(200).json({ ok: true });
-            return;
-        }
-        res.status(200).json({ status: 'ok' });
-    } catch (err: any) {
-        console.error('--- ERROR CAUGHT ---', err.message);
-        res.status(200).json({ ok: true, error: err.message });
+    if (req.method === 'GET') {
+        return res.status(200).json({ status: 'ok' });
     }
+
+    try {
+        await bot.handleUpdate(req.body);
+    } catch (err: any) {
+        console.error('--- ERROR CAUGHT IN WEBHOOK ---', err);
+    }
+
+    // Always return 200 explicitly to satisfy Telegram and release the HTTP connection
+    return res.status(200).send('OK');
 }
