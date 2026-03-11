@@ -9,9 +9,9 @@
         }
     },
     "rewrites": [
+        { "source": "/app/(.*\\.[a-zA-Z0-9]+)$", "destination": "/mini-app/dist/$1" },
         { "source": "/app", "destination": "/mini-app/dist/index.html" },
-        { "source": "/app/(.*)", "destination": "/mini-app/dist/$1" },
-        { "source": "/app/:path*", "destination": "/mini-app/dist/index.html" }
+        { "source": "/app/(.*)", "destination": "/mini-app/dist/index.html" }
     ],
     "headers": [
         {
