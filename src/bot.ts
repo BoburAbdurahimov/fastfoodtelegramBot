@@ -83,7 +83,7 @@ export function createBot(): Telegraf<BotContext> {
 
     // ─── Mini App ───
     bot.command('app', async (ctx) => {
-        const miniAppUrl = process.env.MINI_APP_URL;
+        const miniAppUrl = process.env.MINI_APP_URL || 'https://fastfood-nu-three.vercel.app/app';
         if (!miniAppUrl) {
             await ctx.reply('⚠️ Mini App URL sozlanmagan. MINI_APP_URL ni .env faylga qo\'shing.');
             return;
@@ -98,7 +98,7 @@ export function createBot(): Telegraf<BotContext> {
     });
 
     bot.hears('📱 Mini App', async (ctx) => {
-        const miniAppUrl = process.env.MINI_APP_URL;
+        const miniAppUrl = process.env.MINI_APP_URL || 'https://fastfood-nu-three.vercel.app/app';
         if (!miniAppUrl) {
             await ctx.reply('⚠️ Mini App URL sozlanmagan.');
             return;
